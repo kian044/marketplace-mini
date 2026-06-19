@@ -14,13 +14,13 @@ struct format_rupiah : numpunct<char>
 };
 
 // database produk
-    struct produk
-    {
-        string nama;
-        string spesifikasi;
-        double harga;
-        int stok;
-    };
+struct produk
+{
+    string nama;
+    string spesifikasi;
+    double harga;
+    int stok;
+};
 
 struct Keranjang
 {
@@ -54,12 +54,23 @@ struct Queue
     int jumlah;
 };
 
+struct Stack
+{
+    string namaProduk;
+    int jumlah;
+};
+
 Nota *head = NULL;
 Nota *tail = NULL;
 
+// Deklarasi Queue (Antrian Masuk)
 Queue antrian[100];
 int front = 0;
 int rear = 0;
+
+// Deklarasi Stack (Riwayat Pengiriman)
+Stack riwayat_kirim[100];
+int top = -1;
 
 Keranjang keranjang[100];
 int jml_keranjang = 0;
@@ -103,8 +114,8 @@ bool login(string user, string pass)
     }
     return false;
 }
-// Fungction Menu Utama
 
+// Function Menu Utama
 void menu_awal()
 {
     cout << "======= MENU AWAL =======" << endl;
@@ -118,23 +129,24 @@ void menu_awal()
     system("cls");
 }
 
-// Function Login Penjual
+// Function Login Penjual (Diperbarui agar mencakup menu Stack & Queue)
 void menu_penjual()
 {
     cout << "======= MENU ADMIN =======" << endl;
-    cout << "|  1. Tambah Barang      |" << endl;
-    cout << "|  2. Hapus Barang       |" << endl;
-    cout << "|  3. Lihat data barang  |" << endl;
-    cout << "|  4. Lihat Antrian      |" << endl;
-    cout << "|  5. Proses Pengiriman  |" << endl;
-    cout << "|  6. Keluar             |" << endl;
+    cout << "|  1. Tambah Barang       |" << endl;
+    cout << "|  2. Hapus Barang        |" << endl;
+    cout << "|  3. Edit Harga Barang   |" << endl;
+    cout << "|  4. Lihat data barang   |" << endl;
+    cout << "|  5. Lihat Antrian(Queue)|" << endl;
+    cout << "|  6. Proses Pengiriman   |" << endl;
+    cout << "|  7. Riwayat Kirim(Stack)|" << endl;
+    cout << "|  8. Keluar              |" << endl;
     cout << "==========================" << endl;
     cout << "Masukkan pilihan anda : ";
     cin >> pilih;
+    cin.ignore();
     system("cls");
 }
-
-// Function Produk Atau Menu penjual
 
 // Function Simpan Produk Ke database
 void simpan_produk()
@@ -149,7 +161,7 @@ void simpan_produk()
     {
         file << daftar_produk[i].nama << "|";
         file << daftar_produk[i].spesifikasi << "|";
-        file << fixed << setprecision(0) << daftar_produk[i].harga << "|"; // membuat angka desimal dibulatkan dan menghapus semua angka di belakang koma
+        file << fixed << setprecision(0) << daftar_produk[i].harga << "|"; 
         file << daftar_produk[i].stok << "|" << endl;
     }
     file.close();
@@ -284,7 +296,6 @@ void tambah_produk()
         return;
     }
 
-    cin.ignore();
     cout << "Masukan nama produk :";
     getline(cin, new_produk.nama);
     for (int i = 0; i < jml_produk; i++)
@@ -314,6 +325,7 @@ void tambah_produk()
         cin >> new_produk.harga;
         cout << "Masukan jumlah stok :";
         cin >> new_produk.stok;
+        cin.ignore();
         daftar_produk[jml_produk].nama = new_produk.nama;
         daftar_produk[jml_produk].spesifikasi = new_produk.spesifikasi;
         daftar_produk[jml_produk].harga = new_produk.harga;
@@ -323,6 +335,94 @@ void tambah_produk()
     }
 }
 
+//Function Edit Harga Produk
+void edit_harga_produk()
+{
+    if (jml_produk == 0)
+    {
+        cout << "Tidak ada produk yang tersedia untuk diedit.\n";
+        return;
+    }
+
+    cout.imbue(locale(cout.getloc(), new format_rupiah));
+    cout << "=== EDIT HARGA PRODUK ===\n";
+    for (int i = 0; i < jml_produk; i++)
+    {
+        cout << i + 1 << ". " << daftar_produk[i].nama 
+             << " [Harga Saat Ini: Rp." << fixed << setprecision(0) << daftar_produk[i].harga << "]\n";
+    }
+
+    int nomor;
+    cout << "Masukkan nomor produk yang ingin diubah harganya: ";
+    cin >> nomor;
+    cin.ignore();
+
+    if (nomor < 1 || nomor > jml_produk)
+    {
+        cout << "Nomor tidak valid!\n";
+        return;
+    }
+
+    double harga_baru;
+    cout << "Masukkan harga baru untuk " << daftar_produk[nomor - 1].nama << " : Rp.";
+    cin >> harga_baru;
+    cin.ignore();
+
+    if (harga_baru < 0)
+    {
+        cout << "Harga tidak valid (tidak boleh minus)!\n";
+        return;
+    }
+
+    daftar_produk[nomor - 1].harga = harga_baru;
+    simpan_produk();
+    cout << "Harga produk berhasil diperbarui!\n";
+    cout << "Tekan enter untuk melanjutkan...";
+    cin.get();
+    system("cls");
+}
+
+// Function Hapus
+void hapus_produk()
+{
+    if (jml_produk == 0)
+    {
+        cout << "Tidak ada produk yang tersedia untuk dihapus.\n";
+        return;
+    }
+
+    cout << "=== HAPUS PRODUK ===\n";
+    for (int i = 0; i < jml_produk; i++)
+    {
+        cout << i + 1 << ". " << daftar_produk[i].nama << "\n";
+    }
+
+    int nomor;
+    cout << "Masukkan nomor produk yang ingin dihapus: ";
+    cin >> nomor;
+    cin.ignore();
+
+    if (nomor < 1 || nomor > jml_produk)
+    {
+        cout << "Nomor tidak valid!\n";
+        return;
+    }
+
+    string nama_dihapus = daftar_produk[nomor - 1].nama;
+
+    for (int i = nomor - 1; i < jml_produk - 1; i++)
+    {
+        daftar_produk[i] = daftar_produk[i + 1];
+    }
+    jml_produk--;
+
+    simpan_produk();
+    cout << "Produk '" << nama_dihapus << "' berhasil dihapus!\n";
+    cout << "Tekan enter untuk melanjutkan...";
+    cin.get();
+    system("cls");
+}
+
 void sorting()
 {
     for (int i = 1; i < jml_produk; i++)
@@ -330,7 +430,6 @@ void sorting()
         produk key = daftar_produk[i];
         int j = i - 1;
 
-        // bandingkan harga
         while (j >= 0 && daftar_produk[j].harga > key.harga)
         {
             daftar_produk[j + 1] = daftar_produk[j];
@@ -352,7 +451,7 @@ void tampilkan_produk()
     cout.imbue(locale(cout.getloc(), new format_rupiah));
     cout << "==================================================== DAFTAR PRODUK ====================================================" << endl;
     cout << left << setw(5) << "| NO" << "|"
-         << setw(28) << "    NAMA   " << "|"
+         << setw(28) << "    NAMA    " << "|"
          << setw(45) << "   \t\t\tSpesifikasi" << "|"
          << setw(15) << "  Harga" << "|"
          << setw(6)  << " Stok" << "|" << endl;
@@ -377,31 +476,29 @@ void tampilkan_produk()
     {
         system("cls");
         sorting();
-    cout << "==================================================== DAFTAR PRODUK ====================================================" << endl;
-    cout << left << setw(5) << "| NO" << "|"
-         << setw(28) << "    NAMA   " << "|"
-         << setw(45) << "   \t\t\tSpesifikasi" << "|"
-         << setw(15) << "  Harga" << "|"
-         << setw(6)  << " Stok" << "|" << endl;
-    cout << "=======================================================================================================================" << endl;
+        cout << "==================================================== DAFTAR PRODUK ====================================================" << endl;
+        cout << left << setw(5) << "| NO" << "|"
+             << setw(28) << "    NAMA    " << "|"
+             << setw(45) << "   \t\t\tSpesifikasi" << "|"
+             << setw(15) << "  Harga" << "|"
+             << setw(6)  << " Stok" << "|" << endl;
+        cout << "=======================================================================================================================" << endl;
 
-    for (int i = 0; i < jml_produk; i++)
-    {
-        cout << "| " << right << setw(2) << (i + 1) << "." << "|" 
-             << setw(28) << left << daftar_produk[i].nama << "|"
-             << setw(60) << daftar_produk[i].spesifikasi << "|" << "Rp."
-             << setw(12) << fixed << setprecision(0) << daftar_produk[i].harga << "|"
-             << setw(6) << daftar_produk[i].stok << "|" << endl;
-    }
+        for (int i = 0; i < jml_produk; i++)
+        {
+            cout << "| " << right << setw(2) << (i + 1) << "." << "|" 
+                 << setw(28) << left << daftar_produk[i].nama << "|"
+                 << setw(60) << daftar_produk[i].spesifikasi << "|" << "Rp."
+                 << setw(12) << fixed << setprecision(0) << daftar_produk[i].harga << "|"
+                 << setw(6) << daftar_produk[i].stok << "|" << endl;
+        }
 
-    cout << "=======================================================================================================================" << endl;
+        cout << "=======================================================================================================================" << endl;
     }
     cout << "Tekan enter untuk kembali ke menu";
     cin.get();
     system("cls");
 }
-
-// Function Pembeli Atau Menu Pembeli
 
 // Function Menu Login Pembeli
 void menu_login_buyer()
@@ -530,7 +627,7 @@ void search_produk()
     cout.imbue(locale(cout.getloc(), new format_rupiah));
     cout << "================================================== PRODUK DITEMUKAN ==================================================" << endl;
         cout << left << setw(4) << "| NO" << "|"
-         << setw(28) << "    NAMA   " << "|"
+         << setw(28) << "    NAMA    " << "|"
          << setw(44) << "   \t\t\tSpesifikasi" << "|"
          << setw(15) << "  Harga" << "|"
          << setw(6)  << " Stok" << "|" << endl;
@@ -590,7 +687,7 @@ void search_produk()
 
         jml_keranjang++;
 
-        cout << "Produk " << daftar_produk[idx].nama << "dengan jumlah " << jumlah << "sudah ditambahkan ke keranjang." << endl;
+        cout << "Produk " << daftar_produk[idx].nama << " dengan jumlah " << jumlah << " sudah ditambahkan ke keranjang." << endl;
 
     }
     cout << "tekan enter untuk kembali";
@@ -627,23 +724,46 @@ void enqueue(string nama, int jumlah)
     antrian[rear].jumlah = jumlah;
     rear++;
 
-    cout << "Pesanan masuk ke antrian Proses\n";
+    cout << "Pesanan masuk ke antrian Proses (Queue)\n";
+}
+
+void push_stack(string nama, int jumlah)
+{
+    if (top < 99)
+    {
+        top++;
+        riwayat_kirim[top].namaProduk = nama;
+        riwayat_kirim[top].jumlah = jumlah;
+    }
 }
 
 void lihat_antrian()
 {
     if (front == rear)
     {
-        cout << "Tidak ada antrian pembelian\n";
+        cout << "Tidak ada antrian pembelian aktif (Queue Kosong)\n";
         return;
     }
 
-    cout << "===== ANTRIAN PEMBELIAN =====" << endl;
+    cout << "===== ANTRIAN PEMBELIAN MASUK (QUEUE - FIFO) =====" << endl;
     for (int i = front; i < rear; i++)
     {
-        cout << i + 1 << ". "
-             << antrian[i].namaProduk
-             << " x" << antrian[i].jumlah << endl;
+        cout << (i - front + 1) << ". " << antrian[i].namaProduk << " x" << antrian[i].jumlah << endl;
+    }
+}
+
+void lihat_riwayat_stack()
+{
+    if (top == -1)
+    {
+        cout << "Belum ada barang yang diproses kirim (Stack Kosong)\n";
+        return;
+    }
+
+    cout << "===== RIWAYAT PROSES PENGIRIMAN TERBARU (STACK - LIFO) =====" << endl;
+    for (int i = top; i >= 0; i--)
+    {
+        cout << "[Terbaru - " << (top - i) << "] " << riwayat_kirim[i].namaProduk << " x" << riwayat_kirim[i].jumlah << " -> Status: Dikirim\n";
     }
 }
 
@@ -651,19 +771,29 @@ void dequeue()
 {
     if (front == rear)
     {
-        cout << "Antrian kosong!\n";
+        cout << "Antrian kosong, tidak ada yang bisa dikirim!\n";
         return;
     }
 
-    cout << "Pesanan" << antrian[front].namaProduk
-         << " sedang dikirim\n";
+    cout << "Pesanan '" << antrian[front].namaProduk << " x" << antrian[front].jumlah << "' sedang dikirim.\n";
 
-    if (head != NULL)
+    // PUSH ke Stack Riwayat Pengiriman sebelum dikeluarkan dari Queue
+    push_stack(antrian[front].namaProduk, antrian[front].jumlah);
+
+    // Update status nota pelanggan di database linked list
+    Nota *temp = head;
+    while (temp != NULL)
     {
-        tail->status = "Dikirim";
-        simpan_nota();
+        if (temp->namaProduk == antrian[front].namaProduk && temp->status == "Diproses")
+        {
+            temp->status = "Dikirim";
+            break;
+        }
+        temp = temp->next;
     }
+    simpan_nota();
 
+    // Majukan front pointer Queue
     front++;
 }
 
@@ -709,7 +839,7 @@ void menu_keranjang()
 {
      cout << "========================== KERANJANG BELANJA ==========================" << endl;
      cout << left << setw(5) << "| NO" << "|"
-         << setw(28) << "    NAMA   " << "|"
+         << setw(28) << "    NAMA    " << "|"
          << setw(15) << "    Jumlah" << "|"
          << setw(19) << "    Harga" << "|" << endl;
     cout << "=======================================================================" << endl;
@@ -830,12 +960,12 @@ void Checkout()
     for (int i = 0; i < jml_keranjang; i++)
     {
         for (int j = 0; j < jml_produk; j++)
-    {
-        if (daftar_produk[j].nama == keranjang[i].namaProduk)
         {
-            daftar_produk[j].stok -= keranjang[i].jumlah;
+            if (daftar_produk[j].nama == keranjang[i].namaProduk)
+            {
+                daftar_produk[j].stok -= keranjang[i].jumlah;
+            }
         }
-    }
         double total = keranjang[i].harga * keranjang[i].jumlah;
 
         tambah_nota(
@@ -852,23 +982,6 @@ void Checkout()
 
     jml_keranjang = 0;
     cout << "Checkout berhasil!\n";
-}
-
-void tampil_keranjang()
-{
-    if (jml_keranjang == 0)
-    {
-        cout << "Keranjang ksong!\n";
-        return;
-    }
-
-    for (int i = 0; i < jml_keranjang; i++)
-    {
-        cout << i+1 << ". "
-             << keranjang[i].namaProduk
-             << "x " << keranjang[i].jumlah
-             << endl;
-    }
 }
 
 int main()
@@ -906,7 +1019,7 @@ menu_awal:
             {
                 cout << "================= Kode Gagal =================" << endl;
                 cout << "|       Kode yang anda masukan salah!        |" << endl;
-                cout << "|                 Coba lagi!                 |" << endl;
+                cout << "|                  Coba lagi!                |" << endl;
                 cout << "==============================================";
                 cin.get();
                 system("cls");
@@ -929,11 +1042,10 @@ menu_awal:
             system("cls");
             goto menu_awal;
             break;
-            break;
         }
     } while (pilihan_awal != 3);
 
-    // menu penjual
+// menu penjual
 menu_penjual:
     do
     {
@@ -944,28 +1056,45 @@ menu_penjual:
             tambah_produk();
             break;
         case 2:
+            hapus_produk();
             break;
         case 3:
-            tampilkan_produk();
+            edit_harga_produk();
             break;
         case 4:
-            lihat_antrian();
+            tampilkan_produk();
             break;
         case 5:
-            dequeue();
+            lihat_antrian();
+            cout << "\nTekan enter untuk kembali...";
+            cin.get();
+            system("cls");
             break;
         case 6:
+            dequeue();
+            cout << "\nTekan enter untuk kembali...";
+            cin.get();
             system("cls");
+            break;
+        case 7:
+            lihat_riwayat_stack();
+            cout << "\nTekan enter untuk kembali...";
+            cin.get();
+            system("cls");
+            break;
+        case 8:
+            system("cls");
+            goto menu_awal;
             break;
 
         default:
-            cout << "Pilihan tidak tersedia1\n";
+            cout << "Pilihan tidak tersedia!\n";
             break;
         }
-    } while (pilih != 4);
+    } while (pilih != 8);
 
-    // menu pembeli
-    menu_login:
+// menu pembeli
+menu_login:
     do
     {
         menu_login_buyer();
@@ -1017,7 +1146,7 @@ menu_penjual:
         }
     } while (pilihan_login != '3');
 
-// menu utama
+// menu utama pembeli
 menu_utama:
     do
     {
@@ -1058,12 +1187,19 @@ menu_utama:
         }
         case 4:
             tampil_riwayat();
+            cout << "\nTekan enter untuk kembali...";
+            cin.get();
+            system("cls");
             break;
         case 5:
             barang_sampai();
+            cout << "\nTekan enter untuk kembali...";
+            cin.get();
+            system("cls");
             break;
         case 6:
             cout << "\nTerimakasih" << endl;
+            goto menu_awal;
             break;
 
         default:
